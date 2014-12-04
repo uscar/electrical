@@ -39,6 +39,7 @@ const int role_cp_pin = 7;
 // Debounce via checking when the last interrupt service was
 unsigned long last_call_time = 0;
 void handleButtonPush() {
+    printf("Interrupt!\n");
     unsigned long curr_time = millis();
     if (curr_time - last_call_time > 50) {
          // Now poll the buttons for which one was pressed (in order of priority)
@@ -74,11 +75,6 @@ void setup() {
     printf("\nUSCAR Quad Control Panel\n");
     printf("Role: %s\n", role_cp ? "Control Panel" : "Quad");
     
-    // Set up interrputs for the button pushes (cp only). Use pin 3 for common button connection.
-    if (role_cp) {
-        attachInterrupt(1, handleButtonPush, CHANGE); //TODO: May want to change this 
-    }
-    
     // Set up the radio
     radio.begin();
     radio.setRetries(15,15);
@@ -103,6 +99,9 @@ void setup() {
         pinMode(kButton, INPUT_PULLUP);
         pinMode(lButton, INPUT_PULLUP);
         pinMode(nButton, INPUT_PULLUP);
+        
+        // Set up interrputs for the button pushes (cp only). Use pin 3 for common button connection.
+        attachInterrupt(1, handleButtonPush, CHANGE); //TODO: May want to change this 
     }
     radio.startListening();
 
@@ -114,6 +113,7 @@ void loop()
 {
     // Now send/receive the state/voltage
     if (role_cp) { // Control Panel
+      printf("kill: %i, land: %i, normal: %i\n", digitalRead(kButton), digitalRead(lButton), digitalRead(nButton));
         // Stop listening
         radio.stopListening();
 
