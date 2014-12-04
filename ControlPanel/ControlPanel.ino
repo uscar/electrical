@@ -15,6 +15,11 @@
 // Set up nRF24L01 radio on SPI bus plus pins 9 & 10 
 RF24 radio(9,10);
 
+// Set up the button pins
+int kButton = 4;
+int lButton = 5;
+int nButton = 6;
+
 // Radio pipe addresses for the 2 nodes to communicate.
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
@@ -38,13 +43,13 @@ void handleButtonPush() {
     if (curr_time - last_call_time > 50) {
          // Now poll the buttons for which one was pressed (in order of priority)
          //TODO: Put buttons here
-         if () {
+         if (digitalRead(kButton) == LOW) {
              curr_state = 'k';
          }
-         else if () {
+         else if (digitalRead(lButton) == LOW) {
              curr_state = 'l';
          }
-         else if () {
+         else if (digitalRead(nButton) == LOW) {
              curr_state = 'n'; 
          }
     }
@@ -93,6 +98,11 @@ void setup() {
         // Initialize state/voltage
         curr_state = 'l';
         curr_voltage = 0;
+        
+        // Initialize button pins
+        pinMode(kButton, INPUT_PULLUP);
+        pinMode(lButton, INPUT_PULLUP);
+        pinMode(nButton, INPUT_PULLUP);
     }
     radio.startListening();
 
