@@ -30,10 +30,26 @@ bool role_cp = 0;
 // For testing, set which role this Arduino should be by grounding pin 7 (grounded means this is the control panel) 
 const int role_cp_pin = 7;
 
-/* Return the current state from the control panel */
-char getState() {
-    // TODO: switch to interrupts and debounce the buttons. For now, always be in the normal state.. Kill or landing should be the default.
-    return 'n';
+/* Handle a button pushe interrupt to change the current state */
+// Debounce via checking when the last interrupt service was
+unsigned long last_call_time = 0;
+void handleButtonPush() {
+    unsigned long curr_time = millis();
+    if (curr_time - last_call_time > 50) {
+         // Now poll the buttons for which one was pressed (in order of priority)
+         //TODO: Put buttons here
+         if () {
+             curr_state = 'k';
+         }
+         else if () {
+             curr_state = 'l';
+         }
+         else if () {
+             curr_state = 'n'; 
+         }
+    }
+    
+    last_call_time = millis();
 }
 
 /* Return the current voltage from the quad */
@@ -53,6 +69,11 @@ void setup() {
     printf("\nUSCAR Quad Control Panel\n");
     printf("Role: %s\n", role_cp ? "Control Panel" : "Quad");
     
+    // Set up interrputs for the button pushes (cp only). Use pin 3 for common button connection.
+    if (role_cp) {
+        attachInterrupt(1, handleButtonPush, CHANGE); //TODO: May want to change this 
+    }
+    
     // Set up the radio
     radio.begin();
     radio.setRetries(15,15);
@@ -70,7 +91,7 @@ void setup() {
         radio.openReadingPipe(1, pipes[1]);
 
         // Initialize state/voltage
-        curr_state = getState();
+        curr_state = 'l';
         curr_voltage = 0;
     }
     radio.startListening();
@@ -79,15 +100,14 @@ void setup() {
     radio.printDetails();
 }
 
-void loop(void)
+void loop()
 {
     // Now send/receive the state/voltage
     if (role_cp) { // Control Panel
         // Stop listening
         radio.stopListening();
 
-        //TODO: Finish this. Update the state.
-        curr_state = getState();
+        // The state will be updated via interrupts when a button is pressed
         printf("Sending state %c ...", curr_state);
         bool ok = radio.write(&curr_state, sizeof(char));
 
