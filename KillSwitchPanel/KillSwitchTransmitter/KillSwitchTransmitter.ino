@@ -13,7 +13,7 @@
 /* Configuration */
 
 // Set up nRF24L01 radio on SPI bus plus pins 9 & 10 
-RF24 radio(9,10);
+RF24 radio(9, 10);
 
 // Set up the button pins
 int kButton = 4;
@@ -62,12 +62,11 @@ void setup() {
     // Print the role for debugging
     Serial.begin(57600); //make sure you set serial monitor to this buad rate
     printf_begin();
-    printf("\nUSCAR Quad Control Panel\n");
-    printf("Role: %s\n", role_cp ? "Control Panel" : "Quad");
+    printf("KillSwitchTransmitter");
     
     // Set up the radio
     radio.begin();
-    radio.setRetries(15,15);
+    radio.setRetries(15, 15);
 
         radio.openWritingPipe(pipes[0]);
         radio.openReadingPipe(1, pipes[1]);
@@ -91,8 +90,7 @@ void setup() {
 
 void loop()
 {
-    // Now send/receive the state/voltage
-    if (role_cp) { // Control Panel
+    //Now send the state and voltage to the receiver:
       printf("kill: %i, land: %i, normal: %i\n", digitalRead(kButton), digitalRead(lButton), digitalRead(nButton));
         // Stop listening
         radio.stopListening();
@@ -132,26 +130,5 @@ void loop()
 
         // Wait 1s
         delay(1000);
-    }
-    else { // Quad
-        // Check if data is ready
-        if (radio.available()) {
-            bool done = false;
-            while (!done) {
-                done = radio.read(&curr_state, sizeof(char));
-            }
-
-            printf("Got payload, state is %c...", curr_state);
-            delay(20);
-
-            // Send the voltage back
-            radio.stopListening();
-            curr_voltage = getVoltage();
-            radio.write(&curr_voltage, sizeof(int));
-            printf("Sent response %i.\n", curr_voltage);
-
-            radio.startListening();
-        }
-    }
 }
 
