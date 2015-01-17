@@ -30,11 +30,6 @@ char curr_state;
 int curr_voltage;
 const int voltage_in_pin = A0;
 
-// This Arduino's role: control panel (role_cp == 1) or quad (role_cp == 0).
-bool role_cp = 0;
-// For testing, set which role this Arduino should be by grounding pin 7 (grounded means this is the control panel) 
-const int role_cp_pin = 7;
-
 /* Handle a button pushe interrupt to change the current state */
 // Debounce via checking when the last interrupt service was
 unsigned long last_call_time = 0;
@@ -62,14 +57,9 @@ void handleButtonPush() {
 int getVoltage() {
     return analogRead(voltage_in_pin); 
 }
+  
 
-void setup() {
-    // Set the role
-    pinMode(role_cp_pin, INPUT);
-    digitalWrite(role_cp_pin, HIGH);
-    delay(20);    
-
-    // Print the role for debugging
+    // Print the role for debugging(remember to set buad rate to 57600);
     Serial.begin(57600);
     printf_begin();
     printf("\nUSCAR Quad Control Panel\n");
@@ -78,31 +68,13 @@ void setup() {
     // Set up the radio
     radio.begin();
     radio.setRetries(15,15);
-    if (digitalRead(role_cp_pin)) { // This is the quad
+    // This is the quad
         radio.openWritingPipe(pipes[1]);
         radio.openReadingPipe(1, pipes[0]);
 
         // Initialize state/voltage
         curr_state = 'l';
         curr_voltage = getVoltage();
-    }
-    else { // This is the control panel
-        role_cp = 1;
-        radio.openWritingPipe(pipes[0]);
-        radio.openReadingPipe(1, pipes[1]);
-
-        // Initialize state/voltage
-        curr_state = 'l';
-        curr_voltage = 0;
-        
-        // Initialize button pins
-        pinMode(kButton, INPUT_PULLUP);
-        pinMode(lButton, INPUT_PULLUP);
-        pinMode(nButton, INPUT_PULLUP);
-        
-        // Set up interrputs for the button pushes (cp only). Use pin 3 for common button connection.
-        attachInterrupt(1, handleButtonPush, CHANGE); //TODO: May want to change this 
-    }
     radio.startListening();
 
     // Print radio config to debug
