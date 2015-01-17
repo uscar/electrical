@@ -82,17 +82,19 @@ void loop()
             printf("Sending Response: %i.\n", curr_voltage);
 
             //Translate the received state into the correct outputs:
-            digitalWrite(landingSeqOut, LOW);
-            digitalWrite(killOut, LOW);
+            //digitalWrite(landingSeqOut, LOW);
+            //digitalWrite(killOut, LOW);
             if(curr_state == 'l'){
-              printf("here landing");
               digitalWrite(landingSeqOut, HIGH);
-              delay(1000);
+              digitalWrite(killOut, LOW);
             }
             else if(curr_state == 'k'){
-              printf("here kill");
               digitalWrite(killOut, HIGH);
-              delay(1000);
+              digitalWrite(landingSeqOut, LOW);
+            }
+            else{
+              digitalWrite(landingSeqOut, LOW);
+              digitalWrite(killOut, HIGH);  
             }
             radio.startListening();
         }

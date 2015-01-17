@@ -124,7 +124,7 @@ void loop()
         if (!timeout) {
             // Success, so get the voltage
             radio.read(&curr_voltage, sizeof(int));
-            printf("Voltage Received: %i\n", curr_voltage);
+            printf("Receiving Voltage: %i\n", curr_voltage);
         }
         else {
             printf("Error: RF24 Timeout.\n");
