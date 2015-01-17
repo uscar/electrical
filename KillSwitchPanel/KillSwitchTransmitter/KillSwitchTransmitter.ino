@@ -1,3 +1,7 @@
+#include <nRF24L01.h>
+#include <RF24.h>
+#include <RF24_config.h>
+
 /*
   USCAR
   Control Panel
@@ -26,9 +30,9 @@ const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 // Data to send/receive
 // state: 'n' = normal, 'l' = landing sequence, 'k' = kill
-volatile char curr_state;
+char curr_state;
 // voltage: read using analogRead, 0-5V scaled to 0-1023
-volatile int curr_voltage;
+int curr_voltage;
 const int voltage_in_pin = A0;
 
 /* Handle a button push interrupt to change the current state */
