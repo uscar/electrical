@@ -15,6 +15,10 @@
 // Set up nRF24L01 radio on SPI bus plus pins 9 & 10 
 RF24 radio(9, 10);
 
+// Set up output pins:
+int landingSeqOut = 4;
+int killOut = 5;
+
 // Radio pipe addresses for the 2 nodes to communicate.
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
@@ -46,6 +50,10 @@ void setup(){
     radio.openWritingPipe(pipes[1]);
     radio.openReadingPipe(1, pipes[0]);
 
+    // Initialize the output
+     pinMode(landingSeqOut, OUTPUT);
+     pinMode(killOut, OUTPUT);
+     
     // Initialize state/voltage
     curr_state = 'l';
     curr_voltage = getVoltage();
@@ -64,15 +72,28 @@ void loop()
                 done = radio.read(&curr_state, sizeof(char));
             }
 
-            printf("Got payload, state is %c...", curr_state);
+            printf("Receiving State: %c, ", curr_state);
             delay(20);
 
             // Send the voltage back
             radio.stopListening();
             curr_voltage = getVoltage();
             radio.write(&curr_voltage, sizeof(int));
-            printf("Sent response %i.\n", curr_voltage);
+            printf("Sending Response: %i.\n", curr_voltage);
 
+            //Translate the received state into the correct outputs:
+            digitalWrite(landingSeqOut, LOW);
+            digitalWrite(killOut, LOW);
+            if(curr_state == 'l'){
+              printf("here landing");
+              digitalWrite(landingSeqOut, HIGH);
+              delay(1000);
+            }
+            else if(curr_state == 'k'){
+              printf("here kill");
+              digitalWrite(killOut, HIGH);
+              delay(1000);
+            }
             radio.startListening();
         }
 }

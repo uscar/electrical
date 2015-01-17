@@ -23,7 +23,6 @@ RF24 radio(9, 10);
 int kButton = 4;
 int lButton = 5;
 int nButton = 6;
-int pwrButton = 3;
 
 // Radio pipe addresses for the 2 nodes to communicate.
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
@@ -76,16 +75,13 @@ void setup() {
     radio.openReadingPipe(1, pipes[1]);
 
     // Initialize state/voltage
-    curr_state = 'l';
+    curr_state = 'n';
     curr_voltage = 0;
         
     // Initialize button pins
     pinMode(kButton, INPUT_PULLUP);
     pinMode(lButton, INPUT_PULLUP);
     pinMode(nButton, INPUT_PULLUP);
-        
-    // Set the power button high
-    pinMode(pwrButton, OUTPUT);
         
     // Set up interrputs for the button pushes (cp only). Use pin 3 for common button connection.
     attachInterrupt(1, handleButtonPush, CHANGE); //TODO: May want to change this 
@@ -103,14 +99,13 @@ void loop()
         radio.stopListening();
 
         // The state will be updated via interrupts when a button is pressed
-        printf("Sending state %c ...", curr_state);
         bool ok = radio.write(&curr_state, sizeof(char));
 
         if (ok) {
-          printf("ok...\n");
+          printf("Sending State: %c, ", curr_state);
         }
         else {
-          printf("failed.\n");
+          printf("Error: Could not send state.\n");
         }
 
         // Resume listening
@@ -129,10 +124,10 @@ void loop()
         if (!timeout) {
             // Success, so get the voltage
             radio.read(&curr_voltage, sizeof(int));
-            printf("Got response. Voltage: %i\n", curr_voltage);
+            printf("Voltage Received: %i\n", curr_voltage);
         }
         else {
-            printf("Failed, response timed out.\n");
+            printf("Error: RF24 Timeout.\n");
         }
 
         // Wait 1s
