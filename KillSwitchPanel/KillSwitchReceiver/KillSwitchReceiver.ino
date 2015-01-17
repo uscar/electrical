@@ -58,12 +58,12 @@ int getVoltage() {
     return analogRead(voltage_in_pin); 
 }
   
-
+void setup(){
     // Print the role for debugging(remember to set buad rate to 57600);
     Serial.begin(57600);
     printf_begin();
     printf("\nUSCAR Quad Control Panel\n");
-    printf("Role: %s\n", role_cp ? "Control Panel" : "Quad");
+    printf("Quad");
     
     // Set up the radio
     radio.begin();
@@ -83,49 +83,6 @@ int getVoltage() {
 
 void loop()
 {
-    // Now send/receive the state/voltage
-    if (role_cp) { // Control Panel
-      printf("kill: %i, land: %i, normal: %i\n", digitalRead(kButton), digitalRead(lButton), digitalRead(nButton));
-        // Stop listening
-        radio.stopListening();
-
-        // The state will be updated via interrupts when a button is pressed
-        printf("Sending state %c ...", curr_state);
-        bool ok = radio.write(&curr_state, sizeof(char));
-
-        if (ok) {
-          printf("ok...\n");
-        }
-        else {
-          printf("failed.\n");
-        }
-
-        // Resume listening
-        radio.startListening();
-
-        // Wait for a response, or until 200 ms have passed
-        unsigned long start_time = millis();
-        bool timeout = false;
-        while (!radio.available() && !timeout) {
-            if (millis() - start_time > 200 ) {
-                timeout = true;
-            }
-        }
-
-        // Handle received data
-        if (!timeout) {
-            // Success, so get the voltage
-            radio.read(&curr_voltage, sizeof(int));
-            printf("Got response. Voltage: %i\n", curr_voltage);
-        }
-        else {
-            printf("Failed, response timed out.\n");
-        }
-
-        // Wait 1s
-        delay(1000);
-    }
-    else { // Quad
         // Check if data is ready
         if (radio.available()) {
             bool done = false;
@@ -144,6 +101,5 @@ void loop()
 
             radio.startListening();
         }
-    }
 }
 
