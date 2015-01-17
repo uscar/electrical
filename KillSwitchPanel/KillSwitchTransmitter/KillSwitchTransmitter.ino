@@ -19,15 +19,16 @@ RF24 radio(9, 10);
 int kButton = 4;
 int lButton = 5;
 int nButton = 6;
+int pwrButton = 3;
 
 // Radio pipe addresses for the 2 nodes to communicate.
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 // Data to send/receive
 // state: 'n' = normal, 'l' = landing sequence, 'k' = kill
-char curr_state;
+volatile char curr_state;
 // voltage: read using analogRead, 0-5V scaled to 0-1023
-int curr_voltage;
+volatile int curr_voltage;
 const int voltage_in_pin = A0;
 
 /* Handle a button push interrupt to change the current state */
@@ -67,21 +68,23 @@ void setup() {
     // Set up the radio
     radio.begin();
     radio.setRetries(15, 15);
+    radio.openWritingPipe(pipes[0]);
+    radio.openReadingPipe(1, pipes[1]);
 
-        radio.openWritingPipe(pipes[0]);
-        radio.openReadingPipe(1, pipes[1]);
-
-        // Initialize state/voltage
-        curr_state = 'l';
-        curr_voltage = 0;
+    // Initialize state/voltage
+    curr_state = 'l';
+    curr_voltage = 0;
         
-        // Initialize button pins
-        pinMode(kButton, INPUT_PULLUP);
-        pinMode(lButton, INPUT_PULLUP);
-        pinMode(nButton, INPUT_PULLUP);
+    // Initialize button pins
+    pinMode(kButton, INPUT_PULLUP);
+    pinMode(lButton, INPUT_PULLUP);
+    pinMode(nButton, INPUT_PULLUP);
         
-        // Set up interrputs for the button pushes (cp only). Use pin 3 for common button connection.
-        attachInterrupt(1, handleButtonPush, CHANGE); //TODO: May want to change this 
+    // Set the power button high
+    pinMode(pwrButton, OUTPUT);
+        
+    // Set up interrputs for the button pushes (cp only). Use pin 3 for common button connection.
+    attachInterrupt(1, handleButtonPush, CHANGE); //TODO: May want to change this 
     radio.startListening();
 
     // Print radio config to debug
