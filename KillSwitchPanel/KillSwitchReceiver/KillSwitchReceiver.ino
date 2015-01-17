@@ -13,12 +13,7 @@
 /* Configuration */
 
 // Set up nRF24L01 radio on SPI bus plus pins 9 & 10 
-RF24 radio(9,10);
-
-// Set up the button pins
-int kButton = 4;
-int lButton = 5;
-int nButton = 6;
+RF24 radio(9, 10);
 
 // Radio pipe addresses for the 2 nodes to communicate.
 const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
@@ -33,25 +28,6 @@ const int voltage_in_pin = A0;
 /* Handle a button pushe interrupt to change the current state */
 // Debounce via checking when the last interrupt service was
 unsigned long last_call_time = 0;
-void handleButtonPush() {
-    printf("Interrupt!\n");
-    unsigned long curr_time = millis();
-    if (curr_time - last_call_time > 50) {
-         // Now poll the buttons for which one was pressed (in order of priority)
-         //TODO: Put buttons here
-         if (digitalRead(kButton) == LOW) {
-             curr_state = 'k';
-         }
-         else if (digitalRead(lButton) == LOW) {
-             curr_state = 'l';
-         }
-         else if (digitalRead(nButton) == LOW) {
-             curr_state = 'n'; 
-         }
-    }
-    
-    last_call_time = millis();
-}
 
 /* Return the current voltage from the quad */
 int getVoltage() {
@@ -62,19 +38,17 @@ void setup(){
     // Print the role for debugging(remember to set buad rate to 57600);
     Serial.begin(57600);
     printf_begin();
-    printf("\nUSCAR Quad Control Panel\n");
-    printf("Quad");
+    printf("KillSwitchReceiver");
     
     // Set up the radio
     radio.begin();
     radio.setRetries(15,15);
-    // This is the quad
-        radio.openWritingPipe(pipes[1]);
-        radio.openReadingPipe(1, pipes[0]);
+    radio.openWritingPipe(pipes[1]);
+    radio.openReadingPipe(1, pipes[0]);
 
-        // Initialize state/voltage
-        curr_state = 'l';
-        curr_voltage = getVoltage();
+    // Initialize state/voltage
+    curr_state = 'l';
+    curr_voltage = getVoltage();
     radio.startListening();
 
     // Print radio config to debug
