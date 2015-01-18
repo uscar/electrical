@@ -2,7 +2,6 @@
   USCAR
   Control Panel
   Description: Transmit a state (nomal operation, kill power, or initiate the landing sequence) to the quad and read back the battery's voltage.
-  For now, both Arduinos are programmed with the same sketch to make debugging easier. They'll be separated later.
 */
 
 #include <SPI.h>
@@ -29,20 +28,15 @@ char curr_state;
 int curr_voltage;
 const int voltage_in_pin = A0;
 
-/* Handle a button pushe interrupt to change the current state */
-// Debounce via checking when the last interrupt service was
-unsigned long last_call_time = 0;
-
 /* Return the current voltage from the quad */
 int getVoltage() {
     return analogRead(voltage_in_pin); 
 }
   
-void setup(){
+void setup() {
     // Print the role for debugging(remember to set buad rate to 57600);
     Serial.begin(57600);
     printf_begin();
-    printf("KillSwitchReceiver");
     
     // Set up the radio
     radio.begin();
@@ -57,46 +51,40 @@ void setup(){
     // Initialize state/voltage
     curr_state = 'l';
     curr_voltage = getVoltage();
+
     radio.startListening();
-
-    // Print radio config to debug
-    radio.printDetails();
 }
 
-void loop()
-{
-        // Check if data is ready
-        if (radio.available()) {
-            bool done = false;
-            while (!done) {
-                done = radio.read(&curr_state, sizeof(char));
-            }
-
-            printf("Receiving State: %c, ", curr_state);
-            delay(20);
-
-            // Send the voltage back
-            radio.stopListening();
-            curr_voltage = getVoltage();
-            radio.write(&curr_voltage, sizeof(int));
-            printf("Sending Response: %i.\n", curr_voltage);
-
-            //Translate the received state into the correct outputs:
-            //digitalWrite(landingSeqOut, LOW);
-            //digitalWrite(killOut, LOW);
-            if(curr_state == 'l'){
-              digitalWrite(landingSeqOut, HIGH);
-              digitalWrite(killOut, LOW);
-            }
-            else if(curr_state == 'k'){
-              digitalWrite(killOut, HIGH);
-              digitalWrite(landingSeqOut, LOW);
-            }
-            else{
-              digitalWrite(landingSeqOut, LOW);
-              digitalWrite(killOut, HIGH);  
-            }
-            radio.startListening();
+void loop() {
+    // Check if data is ready
+    if (radio.available()) {
+        bool done = false;
+        while (!done) {
+            done = radio.read(&curr_state, sizeof(char));
         }
-}
 
+        printf("Receiving State: %c, ", curr_state);
+        delay(20);
+
+        // Send the voltage back
+        radio.stopListening();
+        curr_voltage = getVoltage();
+        radio.write(&curr_voltage, sizeof(int));
+        printf("Sending Response: %i.\n", curr_voltage);
+
+        // Translate the received state into the correct outputs:
+        if (curr_state == 'l') {
+            digitalWrite(landingSeqOut, HIGH);
+            digitalWrite(killOut, LOW);
+        }
+        else if (curr_state == 'k') {
+            digitalWrite(killOut, HIGH);
+            digitalWrite(landingSeqOut, LOW);
+        }
+        else {
+            digitalWrite(landingSeqOut, LOW);
+            digitalWrite(killOut, LOW);
+        }
+        radio.startListening();
+    }
+}
