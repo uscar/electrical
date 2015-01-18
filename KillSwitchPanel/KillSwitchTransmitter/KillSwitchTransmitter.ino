@@ -6,7 +6,6 @@
   USCAR
   Control Panel
   Description: Transmit a state (nomal operation, kill power, or initiate the landing sequence) to the quad and read back the battery's voltage.
-  For now, both Arduinos are programmed with the same sketch to make debugging easier. They'll be separated later.
 */
 
 #include <SPI.h>
@@ -34,39 +33,23 @@ char curr_state;
 int curr_voltage;
 const int voltage_in_pin = A0;
 
-/* Handle a button push interrupt to change the current state */
-// Debounce via checking when the last interrupt service was
-unsigned long last_call_time = 0;
-void handleButtonPush() {
-    printf("Interrupt!\n");
-    unsigned long curr_time = millis();
-    if (curr_time - last_call_time > 50) {
-         // Now poll the buttons for which one was pressed (in order of priority)
-         //TODO: Put buttons here
-         if (digitalRead(kButton) == LOW) {
-             curr_state = 'k';
-         }
-         else if (digitalRead(lButton) == LOW) {
-             curr_state = 'l';
-         }
-         else if (digitalRead(nButton) == LOW) {
-             curr_state = 'n'; 
-         }
+/* Poll buttons (in order of priority) to check for state change */
+void pollButtons() {
+    if (digitalRead(kButton) == LOW) {
+        curr_state = 'k';
     }
-    
-    last_call_time = millis();
-}
-
-/* Return the current voltage from the quad */
-int getVoltage() {
-    return analogRead(voltage_in_pin); 
+    else if (digitalRead(lButton) == LOW) {
+        curr_state = 'l';
+    }
+    else if (digitalRead(nButton) == LOW) {
+        curr_state = 'n'; 
+    }
 }
 
 void setup() {  
     // Print the role for debugging
-    Serial.begin(57600); //make sure you set serial monitor to this buad rate
+    Serial.begin(57600);
     printf_begin();
-    printf("KillSwitchTransmitter");
     
     // Set up the radio
     radio.begin();
@@ -74,63 +57,56 @@ void setup() {
     radio.openWritingPipe(pipes[0]);
     radio.openReadingPipe(1, pipes[1]);
 
-    // Initialize state/voltage
-    curr_state = 'n';
+    // Initialize state/voltage. Start in land, since it's on the ground.
+    curr_state = 'l';
     curr_voltage = 0;
         
     // Initialize button pins
     pinMode(kButton, INPUT_PULLUP);
     pinMode(lButton, INPUT_PULLUP);
     pinMode(nButton, INPUT_PULLUP);
-        
-    // Set up interrputs for the button pushes (cp only). Use pin 3 for common button connection.
-    attachInterrupt(1, handleButtonPush, CHANGE); //TODO: May want to change this 
+     
+    radio.startListening();
+}
+
+void loop() {
+    // Now send the state and voltage to the receiver:
+    // Stop listening
+    radio.stopListening();
+
+    // Poll buttons to update the state, then send it
+    pollButtons();
+    bool ok = radio.write(&curr_state, sizeof(char));
+
+    if (ok) {
+        printf("Sending State: %c, ", curr_state);
+    }
+    else {
+        printf("Error: Could not send state.\n");
+    }
+
+    // Resume listening
     radio.startListening();
 
-    // Print radio config to debug
-    radio.printDetails();
+    // Wait for a response, or until 200 ms have passed
+    unsigned long start_time = millis();
+    bool timeout = false;
+    while (!radio.available() && !timeout) {
+        if (millis() - start_time > 200 ) {
+            timeout = true;
+        }
+    }
+
+    // Handle received data
+    if (!timeout) {
+        // Success, so get the voltage
+        radio.read(&curr_voltage, sizeof(int));
+        printf("Receiving Voltage: %i\n", curr_voltage);
+    }
+    else {
+        printf("Error: RF24 Timeout.\n");
+    }
+
+    // Wait 1s
+    delay(1000);
 }
-
-void loop()
-{
-    //Now send the state and voltage to the receiver:
-      printf("kill: %i, land: %i, normal: %i\n", digitalRead(kButton), digitalRead(lButton), digitalRead(nButton));
-        // Stop listening
-        radio.stopListening();
-
-        // The state will be updated via interrupts when a button is pressed
-        bool ok = radio.write(&curr_state, sizeof(char));
-
-        if (ok) {
-          printf("Sending State: %c, ", curr_state);
-        }
-        else {
-          printf("Error: Could not send state.\n");
-        }
-
-        // Resume listening
-        radio.startListening();
-
-        // Wait for a response, or until 200 ms have passed
-        unsigned long start_time = millis();
-        bool timeout = false;
-        while (!radio.available() && !timeout) {
-            if (millis() - start_time > 200 ) {
-                timeout = true;
-            }
-        }
-
-        // Handle received data
-        if (!timeout) {
-            // Success, so get the voltage
-            radio.read(&curr_voltage, sizeof(int));
-            printf("Receiving Voltage: %i\n", curr_voltage);
-        }
-        else {
-            printf("Error: RF24 Timeout.\n");
-        }
-
-        // Wait 1s
-        delay(1000);
-}
-
