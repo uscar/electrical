@@ -32,6 +32,8 @@ char curr_state;
 // voltage: read using analogRead, 0-5V scaled to 0-1023
 int curr_voltage;
 const int voltage_in_pin = A0;
+// The max voltage of the battery, to scale curr_voltage
+const float battery_capacity = 7.4;
 
 /* Poll buttons (in order of priority) to check for state change */
 void pollButtons() {
@@ -101,7 +103,10 @@ void loop() {
     if (!timeout) {
         // Success, so get the voltage
         radio.read(&curr_voltage, sizeof(int));
-        printf("Receiving Voltage: %i\n", curr_voltage);
+        printf("Receiving Voltage: ");
+        // Scale the voltage by the battery capacity
+        Serial.print(curr_voltage*battery_capacity/1023);
+        printf("v\n", curr_voltage);
     }
     else {
         printf("Error: RF24 Timeout.\n");
